@@ -4,9 +4,11 @@
 #include <cmath>
 #include <limits>
 #include <vector>
+#include <cstring>
 
 #include "base.h"
 #include "open-simplex-2d.h"
+#include "font_data.h"
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -17,6 +19,61 @@ namespace voxels {
 namespace {
 
 //////////////////////////////////////////////////////////////////////////////
+
+// Font metrics from generated font_data.h
+constexpr int FONT_GLYPH_WIDTH = 10;
+constexpr int FONT_GLYPH_HEIGHT = 16;
+constexpr int FONT_SPACING = 2;  // Space between letters
+
+// Check if (x, z) position is part of horizontal text
+// Text is rendered flat on the ground (x = horizontal, z = vertical in text space)
+// text: null-terminated string to render
+bool isHorizontalText(int x, int z, const char* text, int startX, int startZ, int scale = 1) {
+  // Calculate relative position
+  int rx = x - startX;
+  int rz = z - startZ;
+
+  // Check Z bounds (height of text)
+  if (rz < 0 || rz >= FONT_GLYPH_HEIGHT * scale) return false;
+  if (rx < 0) return false;
+
+  int localZ = rz / scale;  // Which row of the glyph
+  // Flip Y-axis so text reads correctly (not upside down)
+  localZ = FONT_GLYPH_HEIGHT - 1 - localZ;
+
+  // Walk through the string to find which character we're in
+  int currentX = 0;
+  for (int i = 0; text[i] != '\0'; i++) {
+    const Letter* letter = getFont(static_cast<int>(text[i]));
+    if (!letter) {
+      // Unknown character, use space
+      currentX += (FONT_GLYPH_WIDTH + FONT_SPACING) * scale;
+      continue;
+    }
+
+    int letterWidth = (letter->width + FONT_SPACING) * scale;
+
+    // Check if we're within this letter's X range
+    if (rx >= currentX && rx < currentX + letterWidth) {
+      int localX = (rx - currentX) / scale;
+
+      // Make sure we're within the actual glyph width (not the spacing)
+      if (localX >= letter->width) return false;
+
+      // Check if this pixel is filled
+      return letter->pixels[localZ][localX];
+    }
+
+    currentX += letterWidth;
+  }
+
+  return false;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+// Toggle flat world for debugging
+constexpr bool kUseFlatWorld = true;  // Set to false for normal terrain
 
 constexpr auto kIslandRadius = 1024;
 constexpr auto kSeaLevel = kWorldHeight / 4;
@@ -116,6 +173,15 @@ const Noise2D cave_noises[2 * kCaveLevels] = {
 HeightmapResult* heightmap(int x, int z) {
   static HeightmapResult kHeightmapResult;
 
+  // FLAT WORLD MODE
+  if constexpr (kUseFlatWorld) {
+    kHeightmapResult.block = Block::Grass;
+    kHeightmapResult.height = 65;  // Just above sea level (64)
+    kHeightmapResult.snow_depth = 0;
+    return &kHeightmapResult;
+  }
+
+  // NORMAL TERRAIN GENERATION
   const auto base = sqrt(x * x + z * z) / kIslandRadius;
   const auto falloff = 16 * base * base;
   if (falloff >= kSeaLevel) {
@@ -233,14 +299,47 @@ void loadChunk(int x, int z, ChunkData* data) {
 
   const auto index = (x - dx) + (z - dz) * kExpandedWidth;
   const auto& cache = raw[index];
-  if (cache.block == Block::Snow) {
-    data->push(Block::Stone, cache.height - cache.snow_depth);
-  } else if (cache.block != Block::Stone) {
+
+  // TEST STRUCTURES: Create test structures near spawn for debugging
+  // Spawn is at (1, 1)
+
+  // Tall pillar at X=5-7, Z=1-3 (goes to Y=100)
+  const bool isTallPillar = (x >= 5 && x <= 7 && z >= 1 && z <= 3);
+
+  // Platform/cube at X=10-15, Z=-2 to 2 (ground level to Y=70)
+  const bool isPlatform = (x >= 10 && x <= 15 && z >= -2 && z <= 2);
+
+  // Genesis 1:1 rendered horizontally on ground at X=20+, Z=10+
+  const char* gen1_1 = "In the beginning God created the heaven and the earth.";
+  const int textStartX = 20, textStartZ = 10;
+  const int textScale = 1;
+  const bool isText = isHorizontalText(x, z, gen1_1, textStartX, textStartZ, textScale);
+
+  if (isTallPillar) {
+    // Create a tall stone pillar going up to Y=100
+    data->push(Block::Stone, 100);
+    data->push(Block::Water, kSeaLevel);
+  } else if (isPlatform) {
+    // Create a stone platform at ground level going up to Y=70
+    data->push(Block::Stone, 70);
+    data->push(Block::Water, kSeaLevel);
+  } else if (isText) {
+    // Render "HI" text as stone inset into the grass (horizontal)
     data->push(Block::Stone, cache.height - 4);
-    data->push(Block::Dirt,  cache.height - 1);
+    data->push(Block::Dirt, cache.height - 1);
+    data->push(Block::Stone, cache.height);  // Top block is stone instead of grass
+    data->push(Block::Water, kSeaLevel);
+  } else {
+    // Normal terrain generation
+    if (cache.block == Block::Snow) {
+      data->push(Block::Stone, cache.height - cache.snow_depth);
+    } else if (cache.block != Block::Stone) {
+      data->push(Block::Stone, cache.height - 4);
+      data->push(Block::Dirt,  cache.height - 1);
+    }
+    data->push(cache.block, cache.height);
+    data->push(Block::Water, kSeaLevel);
   }
-  data->push(cache.block, cache.height);
-  data->push(Block::Water, kSeaLevel);
 
   auto limit = kWorldHeight - 1;
   for (const auto offset : kNeighborOffsets) {
@@ -248,12 +347,15 @@ void loadChunk(int x, int z, ChunkData* data) {
     if (neighbor_height >= kSeaLevel) continue;
     limit = std::min(limit, neighbor_height - 1);
   }
-  const auto cave_height = carveCaves(x, z, limit, cache.height, data);
+  // Skip caves and decorations in flat world mode
+  if constexpr (!kUseFlatWorld) {
+    const auto cave_height = carveCaves(x, z, limit, cache.height, data);
 
-  if (cache.block == Block::Grass && cave_height < cache.height) {
-    const auto hash = hash_point(x, z) & 63;
-    if (hash < 2) data->decorate(Block::Bush, cache.height);
-    else if (hash < 4) data->decorate(Block::Rock, cache.height);
+    if (cache.block == Block::Grass && cave_height < cache.height) {
+      const auto hash = hash_point(x, z) & 63;
+      if (hash < 2) data->decorate(Block::Bush, cache.height);
+      else if (hash < 4) data->decorate(Block::Rock, cache.height);
+    }
   }
   data->commit();
 }

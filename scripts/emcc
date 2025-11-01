@@ -1,14 +1,29 @@
 #!/bin/bash
 
 #TODO(skishore): Get the code to compile with -Wsign-conversion.
-CC="emcc -O2 -fno-exceptions -fno-rtti -mnontrapping-fptoint -sALLOW_MEMORY_GROWTH -sENVIRONMENT=web -sFILESYSTEM=0 -sWASM=1 -Wl,--export=malloc -Wl,--export=free -Wall -Wconversion -Werror -Wno-sign-conversion -g2"
+CC="emcc -O2 -fno-exceptions -fno-rtti -mnontrapping-fptoint -sALLOW_MEMORY_GROWTH -sENVIRONMENT=web -sFILESYSTEM=0 -sWASM=1 -Wl,--export=malloc -Wl,--export=free -Wall -Wconversion -Werror -Wno-sign-conversion -Wno-deprecated-declarations -Wno-unneeded-internal-declaration -g2"
 TARGET=core
 
 set -ex
 
 $CC wasm/*.cpp -o "$TARGET.js"
 
+# Inject beforeWasmCompile hook (pass info.env since that's the wasmImports object)
+sed -i 's/var info = getWasmImports();/var info = getWasmImports(); window.beforeWasmCompile(info.env);/' "$TARGET.js"
+
+# Add Module.asm for compatibility (newer Emscripten doesn't set this automatically)
+sed -i '/^function assignWasmExports(wasmExports) {$/a\  Module.asm = wasmExports;' "$TARGET.js"
+
+# Add HEAP arrays to Module object (needed for js_AddVoxelMesh, etc.)
+sed -i '/HEAPU64 = new BigUint64Array(b);$/a\  Module.HEAP8 = HEAP8; Module.HEAP16 = HEAP16; Module.HEAP32 = HEAP32; Module.HEAPU8 = HEAPU8; Module.HEAPU16 = HEAPU16; Module.HEAPU32 = HEAPU32; Module.HEAPF32 = HEAPF32; Module.HEAPF64 = HEAPF64;' "$TARGET.js"
+
+# Add onWasmCompile hook via Module.postRun
 echo "" >> "$TARGET.js"
-echo "__ATPOSTRUN__.push(() => window.onWasmCompile(Module));" >> "$TARGET.js"
-sed -i '' 's/var asm = createWasm/window.beforeWasmCompile(wasmImports); var asm = createWasm/g' "$TARGET.js"
-stat -f '%z' "$TARGET.wasm"
+echo "if (!Module['postRun']) Module['postRun'] = []; Module['postRun'].push(() => window.onWasmCompile(Module));" >> "$TARGET.js"
+
+# Show WASM size (use 'stat' with platform-appropriate flags)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  stat -f '%z' "$TARGET.wasm"
+else
+  stat -c '%s' "$TARGET.wasm" 2>/dev/null || wc -c < "$TARGET.wasm"
+fi

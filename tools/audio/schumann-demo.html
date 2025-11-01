@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schumann Resonance Audio Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: white;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      text-align: center;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .subtitle {
+      text-align: center;
+      opacity: 0.9;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+    }
+
+    .info-box {
+      background: rgba(255, 255, 255, 0.15);
+      border-left: 4px solid #4CAF50;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+
+    .info-box h3 {
+      margin-bottom: 10px;
+      color: #4CAF50;
+    }
+
+    .info-box p {
+      line-height: 1.6;
+      opacity: 0.95;
+    }
+
+    .controls {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 12px;
+      margin: 20px 0;
+    }
+
+    .control-group {
+      margin-bottom: 25px;
+    }
+
+    .control-group label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 600;
+      font-size: 1.1em;
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 15px 25px;
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.stop {
+      background: linear-gradient(135deg, #f44336 0%, #da190b 100%);
+      box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+    }
+
+    button.stop:hover {
+      box-shadow: 0 6px 20px rgba(244, 67, 54, 0.5);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .slider-container {
+      margin: 20px 0;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.2);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #4CAF50;
+      cursor: pointer;
+      border: none;
+    }
+
+    .value-display {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 5px 15px;
+      border-radius: 5px;
+      margin-left: 10px;
+      font-weight: 600;
+    }
+
+    .status {
+      text-align: center;
+      padding: 20px;
+      font-size: 1.2em;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .status.playing {
+      background: rgba(76, 175, 80, 0.2);
+      border: 2px solid #4CAF50;
+    }
+
+    .harmonics-display {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .harmonic-item {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .harmonic-item .freq {
+      font-size: 1.3em;
+      font-weight: 600;
+      color: #4CAF50;
+    }
+
+    .harmonic-item .label {
+      font-size: 0.85em;
+      opacity: 0.8;
+      margin-top: 5px;
+    }
+
+    .warning {
+      background: rgba(255, 152, 0, 0.2);
+      border-left: 4px solid #ff9800;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      opacity: 0.7;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌍 Schumann Resonance Audio</h1>
+    <p class="subtitle">Earth's Natural Frequency Generator</p>
+
+    <div class="info-box">
+      <h3>What is the Schumann Resonance?</h3>
+      <p>
+        The Schumann Resonances are electromagnetic resonances in Earth's atmosphere,
+        with a fundamental frequency of <strong>7.83 Hz</strong>. This frequency closely
+        matches human alpha brain waves associated with relaxation and meditation.
+      </p>
+    </div>
+
+    <div class="warning">
+      ⚠️ <strong>Important:</strong> Use headphones for binaural beats to work properly.
+      Keep volume low. Not intended for medical use. Always allow user control.
+    </div>
+
+    <div class="status" id="status">
+      Stopped - Click a preset to start
+    </div>
+
+    <div class="controls">
+      <h3 style="margin-bottom: 20px;">Quick Presets</h3>
+
+      <div class="button-group">
+        <button onclick="playAmbient()">🌙 Ambient</button>
+        <button onclick="playMeditation()">🧘 Meditation</button>
+        <button onclick="playEnergetic()">⚡ Energetic</button>
+        <button onclick="playBinaural()">🎧 Binaural</button>
+        <button class="stop" onclick="stopAll()">⏹️ Stop</button>
+      </div>
+
+      <div class="control-group">
+        <label>
+          Master Volume
+          <span class="value-display" id="volume-display">10%</span>
+        </label>
+        <div class="slider-container">
+          <input type="range" id="volume" min="0" max="100" value="10" oninput="updateVolume(this.value)">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>
+          Frequency Variation
+          <span class="value-display" id="variation-display">10%</span>
+        </label>
+        <div class="slider-container">
+          <input type="range" id="variation" min="0" max="100" value="10" oninput="updateVariation(this.value)">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>Mode</label>
+        <div class="button-group">
+          <button onclick="setMode('binaural')">Binaural</button>
+          <button onclick="setMode('isochronic')">Isochronic</button>
+          <button onclick="setMode('harmonic')">Harmonic</button>
+          <button onclick="setMode('ambient')">Ambient</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <h3>Schumann Resonance Harmonics</h3>
+      <div class="harmonics-display">
+        <div class="harmonic-item">
+          <div class="freq">7.83 Hz</div>
+          <div class="label">Fundamental</div>
+        </div>
+        <div class="harmonic-item">
+          <div class="freq">14.3 Hz</div>
+          <div class="label">2nd Harmonic</div>
+        </div>
+        <div class="harmonic-item">
+          <div class="freq">20.8 Hz</div>
+          <div class="label">3rd Harmonic</div>
+        </div>
+        <div class="harmonic-item">
+          <div class="freq">27.3 Hz</div>
+          <div class="label">4th Harmonic</div>
+        </div>
+        <div class="harmonic-item">
+          <div class="freq">33.8 Hz</div>
+          <div class="label">5th Harmonic</div>
+        </div>
+        <div class="harmonic-item">
+          <div class="freq">39.0 Hz</div>
+          <div class="label">6th Harmonic</div>
+        </div>
+        <div class="harmonic-item">
+          <div class="freq">45.0 Hz</div>
+          <div class="label">7th Harmonic</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <h3>Mode Descriptions</h3>
+      <p><strong>Binaural:</strong> Different frequencies in each ear create perceived beat at Schumann frequency. Requires headphones.</p>
+      <p><strong>Isochronic:</strong> Pulsing tones at Schumann frequencies. Works with or without headphones.</p>
+      <p><strong>Harmonic:</strong> All Schumann harmonics layered as audible tones. Rich ambient sound.</p>
+      <p><strong>Ambient:</strong> Balanced mix of all harmonics for gentle background audio.</p>
+    </div>
+
+    <div class="footer">
+      <p>Cornerstone Project • Schumann Resonance Audio Generator</p>
+      <p>For educational and wellness purposes only</p>
+    </div>
+  </div>
+
+  <script src="schumann-audio-generator.js"></script>
+  <script>
+    let player = null;
+
+    // Initialize on first user interaction
+    async function init() {
+      if (!player) {
+        player = new SchumannPlayer();
+        await player.init();
+        console.log('Schumann player initialized');
+      }
+    }
+
+    async function playAmbient() {
+      await init();
+      player.playAmbient(parseInt(document.getElementById('volume').value) / 100);
+      updateStatus('Playing: Ambient Mode 🌙');
+    }
+
+    async function playMeditation() {
+      await init();
+      player.playMeditation(parseInt(document.getElementById('volume').value) / 100);
+      updateStatus('Playing: Meditation Mode 🧘');
+    }
+
+    async function playEnergetic() {
+      await init();
+      player.playEnergetic(parseInt(document.getElementById('volume').value) / 100);
+      updateStatus('Playing: Energetic Mode ⚡');
+    }
+
+    async function playBinaural() {
+      await init();
+      player.generator.setMode('binaural');
+      player.generator.setVolume(parseInt(document.getElementById('volume').value) / 100);
+      player.generator.start();
+      player.generator.fadeIn(3);
+      updateStatus('Playing: Binaural Beats 🎧');
+    }
+
+    function stopAll() {
+      if (player) {
+        player.stop();
+        updateStatus('Stopped ⏹️');
+      }
+    }
+
+    async function setMode(mode) {
+      await init();
+      player.generator.setMode(mode);
+      updateStatus(`Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
+    }
+
+    function updateVolume(value) {
+      document.getElementById('volume-display').textContent = value + '%';
+      if (player) {
+        player.setVolume(value / 100);
+      }
+    }
+
+    function updateVariation(value) {
+      document.getElementById('variation-display').textContent = value + '%';
+      if (player) {
+        player.generator.setVariation(value / 100);
+      }
+    }
+
+    function updateStatus(text) {
+      const status = document.getElementById('status');
+      status.textContent = text;
+      status.classList.add('playing');
+
+      if (text.includes('Stopped')) {
+        status.classList.remove('playing');
+      }
+    }
+
+    // Warn if not using headphones for binaural
+    window.addEventListener('load', () => {
+      const isHeadphones = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+      console.log('Schumann Resonance Audio Demo loaded');
+      console.log('Tip: Use headphones for binaural beats!');
+    });
+  </script>
+</body>
+</html>

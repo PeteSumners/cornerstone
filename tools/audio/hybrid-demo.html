@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Schumann Resonance Player - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #a0c4ff;
+            font-size: 1.1em;
+        }
+
+        .warning {
+            background: rgba(255, 200, 0, 0.2);
+            border-left: 4px solid #ffc800;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .panel h2 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .value-display {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 12px;
+            border-radius: 4px;
+            margin-left: 10px;
+            font-family: monospace;
+        }
+
+        .status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .status-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .status-item strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #a0c4ff;
+        }
+
+        .harmonics {
+            display: grid;
+            gap: 10px;
+        }
+
+        .harmonic-item {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .harmonic-item label {
+            flex: 1;
+            font-size: 0.9em;
+        }
+
+        .harmonic-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .info {
+            background: rgba(160, 196, 255, 0.1);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .playing-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4caf50;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .stopped-indicator {
+            background: #f44336;
+            animation: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌍 Hybrid Schumann Resonance Player</h1>
+            <p class="subtitle">Procedural Precision + AI-Generated Beauty</p>
+        </header>
+
+        <div class="warning">
+            ⚠️ <strong>Note:</strong> This demo requires pre-generated AI audio textures.
+            See <code>AI_AUDIO_GENERATION.md</code> for instructions on generating textures using AudioLDM2.
+        </div>
+
+        <!-- Main Controls -->
+        <div class="panel">
+            <h2>Main Controls</h2>
+            <div class="controls">
+                <button id="initBtn">Initialize Audio</button>
+                <button id="playBtn" disabled>Play (Ambient)</button>
+                <button id="stopBtn" disabled>Stop</button>
+            </div>
+
+            <div class="slider-group">
+                <label>
+                    Master Volume
+                    <span class="value-display" id="volumeValue">5%</span>
+                </label>
+                <input type="range" id="volumeSlider" min="0" max="20" value="5" step="1">
+            </div>
+
+            <div class="slider-group">
+                <label>
+                    Mix Ratio:
+                    <span class="value-display" id="mixValue">40% Procedural / 60% AI</span>
+                </label>
+                <input type="range" id="mixSlider" min="0" max="100" value="40" step="5">
+            </div>
+        </div>
+
+        <!-- Presets -->
+        <div class="panel">
+            <h2>Presets</h2>
+            <div class="controls">
+                <button class="preset-btn" data-preset="ambient">🌿 Ambient</button>
+                <button class="preset-btn" data-preset="meditation">🧘 Meditation</button>
+                <button class="preset-btn" data-preset="energetic">⚡ Energetic</button>
+                <button class="preset-btn" data-preset="night">🌙 Night</button>
+                <button class="preset-btn" data-preset="grounding">🪨 Grounding</button>
+            </div>
+        </div>
+
+        <!-- Harmonics Control -->
+        <div class="panel">
+            <h2>Harmonics Control (Procedural Layer)</h2>
+            <div class="harmonics" id="harmonicsControl">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="panel">
+            <h2>Status <span id="playingIndicator" class="playing-indicator stopped-indicator"></span></h2>
+            <div class="status">
+                <div class="status-item">
+                    <strong>Playing:</strong>
+                    <span id="statusPlaying">No</span>
+                </div>
+                <div class="status-item">
+                    <strong>Current Texture:</strong>
+                    <span id="statusTexture">None</span>
+                </div>
+                <div class="status-item">
+                    <strong>Procedural Mix:</strong>
+                    <span id="statusProceduralMix">0%</span>
+                </div>
+                <div class="status-item">
+                    <strong>Texture Mix:</strong>
+                    <span id="statusTextureMix">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info">
+            <strong>How it works:</strong><br>
+            <strong>Procedural Layer:</strong> Exact Schumann frequencies (7.83 Hz, 14.3 Hz, etc.) multiplied by 32 for audibility.<br>
+            <strong>AI Texture Layer:</strong> Organic ambient soundscape generated by AudioLDM2 or similar AI.<br>
+            <strong>Hybrid Mix:</strong> Combines mathematical precision with natural, organic beauty.
+        </div>
+    </div>
+
+    <script src="hybrid-schumann-player.js"></script>
+    <script>
+        let player = null;
+
+        // DOM Elements
+        const initBtn = document.getElementById('initBtn');
+        const playBtn = document.getElementById('playBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+        const mixSlider = document.getElementById('mixSlider');
+        const mixValue = document.getElementById('mixValue');
+        const presetBtns = document.querySelectorAll('.preset-btn');
+        const harmonicsControl = document.getElementById('harmonicsControl');
+        const playingIndicator = document.getElementById('playingIndicator');
+
+        // Status displays
+        const statusPlaying = document.getElementById('statusPlaying');
+        const statusTexture = document.getElementById('statusTexture');
+        const statusProceduralMix = document.getElementById('statusProceduralMix');
+        const statusTextureMix = document.getElementById('statusTextureMix');
+
+        // Initialize
+        initBtn.addEventListener('click', async () => {
+            try {
+                initBtn.disabled = true;
+                initBtn.textContent = 'Initializing...';
+
+                player = new HybridSchumannPlayer();
+                await player.init();
+
+                // Enable controls
+                playBtn.disabled = false;
+                stopBtn.disabled = false;
+                presetBtns.forEach(btn => btn.disabled = false);
+
+                initBtn.textContent = 'Initialized ✓';
+                initBtn.style.background = '#4caf50';
+
+                // Populate harmonics
+                populateHarmonics();
+
+                updateStatus();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                initBtn.textContent = 'Initialization Failed';
+                initBtn.style.background = '#f44336';
+                initBtn.disabled = false;
+            }
+        });
+
+        // Play
+        playBtn.addEventListener('click', async () => {
+            if (!player) return;
+
+            const volume = volumeSlider.value / 100;
+            await player.play('ambient', volume);
+
+            playingIndicator.classList.remove('stopped-indicator');
+            updateStatus();
+        });
+
+        // Stop
+        stopBtn.addEventListener('click', () => {
+            if (!player) return;
+
+            player.stop();
+
+            playingIndicator.classList.add('stopped-indicator');
+            updateStatus();
+        });
+
+        // Volume
+        volumeSlider.addEventListener('input', (e) => {
+            const volume = e.target.value / 100;
+            volumeValue.textContent = `${e.target.value}%`;
+
+            if (player) {
+                player.setVolume(volume);
+            }
+        });
+
+        // Mix Ratio
+        mixSlider.addEventListener('input', (e) => {
+            const proceduralPercent = parseInt(e.target.value);
+            const texturePercent = 100 - proceduralPercent;
+            mixValue.textContent = `${proceduralPercent}% Procedural / ${texturePercent}% AI`;
+
+            if (player) {
+                player.setMixRatio(proceduralPercent);
+                updateStatus();
+            }
+        });
+
+        // Presets
+        presetBtns.forEach(btn => {
+            btn.disabled = true;
+            btn.addEventListener('click', async () => {
+                if (!player) return;
+
+                const preset = btn.dataset.preset;
+                await player.playPreset(preset);
+
+                playingIndicator.classList.remove('stopped-indicator');
+                updateStatus();
+            });
+        });
+
+        // Populate harmonics control
+        function populateHarmonics() {
+            if (!player) return;
+
+            const status = player.getStatus();
+            harmonicsControl.innerHTML = '';
+
+            status.harmonics.forEach((harmonic, i) => {
+                const item = document.createElement('div');
+                item.className = 'harmonic-item';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = harmonic.enabled;
+                checkbox.id = `harmonic${i}`;
+
+                checkbox.addEventListener('change', (e) => {
+                    player.setHarmonic(i, e.target.checked);
+                });
+
+                const label = document.createElement('label');
+                label.htmlFor = `harmonic${i}`;
+                label.textContent = `${harmonic.name}: ${harmonic.baseFreq} Hz (${harmonic.audibleFreq.toFixed(2)} Hz)`;
+
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                harmonicsControl.appendChild(item);
+            });
+        }
+
+        // Update status display
+        function updateStatus() {
+            if (!player) return;
+
+            const status = player.getStatus();
+
+            statusPlaying.textContent = status.isPlaying ? 'Yes' : 'No';
+            statusTexture.textContent = status.currentTexture || 'None';
+            statusProceduralMix.textContent = `${Math.round(status.proceduralMix * 100)}%`;
+            statusTextureMix.textContent = `${Math.round(status.textureMix * 100)}%`;
+        }
+
+        // Update status every second
+        setInterval(() => {
+            if (player) {
+                updateStatus();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -6,6 +6,7 @@ import {EntityId, kNoEntity} from './ecs.js';
 import {AStar, Check, PathNode, Point as AStarPoint} from './pathing.js';
 import {SpriteMesh, ShadowMesh, Texture} from './renderer.js';
 import {sweep} from './sweep.js';
+import {TextWorld, BibleVerseDisplay} from './text-integration.js';
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -1108,7 +1109,9 @@ const safeHeight = (env: Env, position: PositionState): number => {
       height = Math.max(height, env.getBaseHeight(x, z));
     }
   }
-  return height + 0.5 * (position.h + 1);
+  const spawnY = height + 0.5 * (position.h + 1);
+  console.log(`[MAIN] safeHeight at (${position.x.toFixed(1)}, ${position.z.toFixed(1)}): baseHeight=${height}, spawnY=${spawnY}`);
+  return spawnY;
 };
 
 const addEntity = (env: TypedEnv, image: string, size: number,
@@ -1143,7 +1146,7 @@ const addEntity = (env: TypedEnv, image: string, size: number,
   return entity;
 };
 
-const main = () => {
+const main = async () => {
   const env = new TypedEnv('container');
 
   const size = 1.5;
@@ -1204,6 +1207,162 @@ const main = () => {
   };
 
   env.blocks = blocks;
+
+  // FIX: Reposition player after world loads (they spawned underground!)
+  console.log('[MAIN] Repositioning player to correct height...');
+  const playerPos = env.position.getX(player);
+  playerPos.y = safeHeight(env, playerPos);
+  console.log(`[MAIN] Player repositioned to Y=${playerPos.y}`);
+
+  const followerPos = env.position.getX(follower);
+  followerPos.y = safeHeight(env, followerPos);
+
+  // ==================== TEXT RENDERING SYSTEM ====================
+
+  console.log('\n=== Initializing Text Rendering ===');
+
+  try {
+    console.log('About to create TextWorld...');
+    // Initialize text system (using stone blocks for text voxels)
+    const textWorld = new TextWorld(env, {
+      atlasPath: 'assets/fonts/default/atlas.png',
+      metadataPath: 'assets/fonts/default/atlas.json',
+    });
+    console.log('TextWorld created, calling init...');
+    await textWorld.init(blocks.stone);
+    console.log('TextWorld init complete!');
+
+    // Create Bible verse display helper
+    const verseDisplay = new BibleVerseDisplay(textWorld);
+
+    console.log('✓ Text system initialized');
+    console.log(`Player spawn position: (${x}, ${z})`);
+
+    // Create a giant test pillar floating in the sky
+    console.log('✓ Creating test pillar high in sky...');
+    const pillarStartY = 80;
+    const pillarEndY = 120;
+    for (let y = pillarStartY; y < pillarEndY; y++) {
+      env.setBlock(int(x), int(y), int(z), blocks.stone);
+      env.setBlock(int(x + 1), int(y), int(z), blocks.stone);
+      env.setBlock(int(x), int(y), int(z + 1), blocks.stone);
+      env.setBlock(int(x + 1), int(y), int(z + 1), blocks.stone);
+    }
+    console.log(`  Pillar position: (${x}, ${pillarStartY}-${pillarEndY}, ${z})`);
+
+    // Place a MASSIVE obvious test structure right at spawn
+    console.log('✓ Placing HUGE test marker at spawn...');
+    const groundY = env.getBaseHeight(int(x), int(z));
+    console.log(`  Ground height at spawn: ${groundY}`);
+
+    // Place a 10-block tall, 3x3 pillar right next to spawn
+    const markerX = int(x + 5);  // 5 blocks away so we can see it
+    const markerZ = int(z);
+    for (let dx = 0; dx < 3; dx++) {
+      for (let dz = 0; dz < 3; dz++) {
+        for (let dy = 0; dy < 10; dy++) {
+          env.setBlock(
+            int(markerX + dx),
+            int(groundY + 1 + dy),  // Start 1 block above ground
+            int(markerZ + dz),
+            blocks.stone
+          );
+        }
+      }
+    }
+    console.log(`  Marker pillar: (${markerX}, ${groundY + 1}, ${markerZ}) - 3x3x10`);
+
+    // Place a simple test cube directly above player spawn
+    console.log('✓ Placing test cube above player...');
+    const cubeSize = 5;  // 5x5x5 blocks
+    const cubeY = 75;    // Starting height (above ground at 65)
+    const cubeX = int(x - 2);  // Offset so cube is centered on player
+    const cubeZ = int(z - 2);
+    for (let dx = 0; dx < cubeSize; dx++) {
+      for (let dy = 0; dy < cubeSize; dy++) {
+        for (let dz = 0; dz < cubeSize; dz++) {
+          env.setBlock(
+            int(cubeX + dx),
+            int(cubeY + dy),
+            int(cubeZ + dz),
+            blocks.stone
+          );
+        }
+      }
+    }
+    console.log(`  Cube position: (${cubeX}, ${cubeY}, ${cubeZ}) size: ${cubeSize}x${cubeSize}x${cubeSize}`);
+
+    // Verify blocks were placed
+    const centerBlock = env.getBlock(int(cubeX + 2), int(cubeY + 2), int(cubeZ + 2));
+    const markerBlock = env.getBlock(int(markerX + 1), int(groundY + 5), int(markerZ + 1));
+    console.log(`  Verification: Block at cube center = ${centerBlock} (should be ${blocks.stone})`);
+    console.log(`  Verification: Block at marker center = ${markerBlock} (should be ${blocks.stone})`);
+    console.log(`  Player spawn will be at approximately: (${x}, ~${groundY + 1.25}, ${z})`);
+
+    // Place simple test text at eye level right in front of player
+    console.log('✓ Placing HI text at eye level...');
+    const eyeLevelY = groundY + 2;
+    const eyeLevelX = int(x + 10);  // 10 blocks in front
+    const eyeLevelZ = int(z);
+    console.log(`  HI position: (${eyeLevelX}, ${eyeLevelY}, ${eyeLevelZ})`);
+    textWorld.placeText('HI', eyeLevelX, eyeLevelY, eyeLevelZ, {
+      scale: 2,
+      depth: 1
+    });
+
+    // Place huge "TEST" text in the sky
+    console.log('✓ Placing TEST text in sky...');
+    const testY = 120;
+    const testX = int(x - 10);
+    const testZ = int(z);
+    console.log(`  TEST position: (${testX}, ${testY}, ${testZ})`);
+    textWorld.placeText('TEST', testX, testY, testZ, {
+      scale: 5,
+      depth: 3
+    });
+
+    // Display Genesis 1:1 near spawn
+    console.log('✓ Placing Genesis 1:1...');
+    const gen_x = 20, gen_y = 10, gen_z = 20;
+    console.log(`  Genesis position: (${gen_x}, ${gen_y}, ${gen_z})`);
+    verseDisplay.displayVerse(
+      'Genesis 1:1',
+      'In the beginning God created the heaven and the earth',
+      gen_x, gen_y, gen_z
+    );
+
+    // Display John 3:16 a bit further
+    console.log('✓ Placing John 3:16...');
+    const john_x = 60, john_y = 10, john_z = 20;
+    console.log(`  John position: (${john_x}, ${john_y}, ${john_z})`);
+    verseDisplay.displayVerse(
+      'John 3:16',
+      'For God so loved the world that he gave his only begotten Son',
+      john_x, john_y, john_z
+    );
+
+    // Place a welcome sign at spawn
+    console.log('✓ Placing welcome sign at ground level...');
+    console.log(`  SPAWN position: (${int(x)}, ground, ${int(z)})`);
+    textWorld.placeTextOnGround(
+      'SPAWN',
+      int(x), int(z),
+      { scale: 3, depth: 2 }
+    );
+
+    console.log('=== Text Rendering Complete ===\n');
+
+    // Force remesh to update voxel geometry with text blocks
+    console.log('[MAIN] Forcing world remesh to show text...');
+    env.remesh();
+    console.log('[MAIN] Remesh complete');
+  } catch (error) {
+    console.error('Failed to initialize text rendering:', error);
+    console.log('Game will continue without text rendering.\n');
+  }
+
+  // ==================== END TEXT RENDERING ====================
+
   env.refresh();
 };
 

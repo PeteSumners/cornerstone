@@ -468,7 +468,9 @@ class Env {
 
     this.helper = nonnull(helper);
     this.helper.renderer = this.renderer;
+    console.log('[ENGINE] Initializing world...');
     this.helper.initializeWorld(kChunkRadius, kFrontierRadius, kFrontierLevels);
+    console.log('[ENGINE] World initialized');
 
     this.registry = new Registry(this.helper, this.renderer);
     this.highlight = this.renderer.addHighlightMesh();
@@ -561,7 +563,13 @@ class Env {
 
     const timing = this.timing;
     if (timing.renderPerf.frame() % 20 !== 0) return;
-    const stats = `Update: ${this.formatStat(timing.updatePerf)}\r\n` +
+
+    // Get player position for debugging
+    const [px, py, pz] = this.renderer.camera.position;
+    const posStr = `Pos: (${px.toFixed(1)}, ${py.toFixed(1)}, ${pz.toFixed(1)})`;
+
+    const stats = `${posStr}\r\n` +
+                  `Update: ${this.formatStat(timing.updatePerf)}\r\n` +
                   `Remesh: ${this.formatStat(timing.remeshPerf)}\r\n` +
                   `Render: ${this.formatStat(timing.renderPerf)}\r\n` +
                   renderer_stats;
@@ -849,7 +857,9 @@ let helper: WasmHelper | null = null;
 let on_start_callbacks: (() => void)[] = [];
 
 const checkReady = () => {
+  console.log(`[ENGINE.TS] checkReady: loaded=${loaded}, helper=${!!helper}`);
   if (!(loaded && helper)) return;
+  console.log('[ENGINE.TS] Ready! Calling start callbacks...');
   on_start_callbacks.forEach(x => x());
 };
 
@@ -932,8 +942,11 @@ const js_SetVoxelMeshPosition = (handle: int, x: int, y: int, z: int): void => {
 
 const init = (fn: () => void) => on_start_callbacks.push(fn);
 
-window.onload = () => { loaded = true; checkReady(); };
+console.log('[ENGINE.TS] Loading...');
+
+window.onload = () => { console.log('[ENGINE.TS] Window loaded'); loaded = true; checkReady(); };
 (window as any).beforeWasmCompile = (env: any) => {
+  console.log('[ENGINE.TS] beforeWasmCompile called');
   env.js_AddLightTexture  = js_AddLightTexture;
   env.js_FreeLightTexture = js_FreeLightTexture;
   env.js_AddInstancedMesh      = js_AddInstancedMesh;
@@ -948,7 +961,7 @@ window.onload = () => { loaded = true; checkReady(); };
   env.js_SetVoxelMeshPosition = js_SetVoxelMeshPosition;
 };
 (window as any).onWasmCompile =
-  (m: WasmModule) => { helper = new WasmHelper(m); checkReady(); };
+  (m: WasmModule) => { console.log('[ENGINE.TS] onWasmCompile called'); helper = new WasmHelper(m); checkReady(); };
 
 //////////////////////////////////////////////////////////////////////////////
 

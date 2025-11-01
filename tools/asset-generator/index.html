@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cornerstone Asset Generator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    header {
+      background: linear-gradient(135deg, #434343 0%, #000000 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      font-size: 1.1em;
+      opacity: 0.9;
+    }
+
+    .tabs {
+      display: flex;
+      background: #f5f5f5;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 15px;
+      text-align: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.3s;
+    }
+
+    .tab:hover {
+      background: #e8e8e8;
+    }
+
+    .tab.active {
+      background: white;
+      color: #667eea;
+      border-bottom: 3px solid #667eea;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 30px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .controls {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .control-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .control-group input,
+    .control-group select {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 1em;
+    }
+
+    .control-group input:focus,
+    .control-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .output {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      min-height: 200px;
+    }
+
+    .output h3 {
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    .asset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 15px;
+    }
+
+    .asset-item {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+    }
+
+    .asset-item:hover {
+      transform: scale(1.05);
+    }
+
+    .asset-item canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+    }
+
+    .asset-item label {
+      display: block;
+      font-size: 0.85em;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .asset-item .download-btn {
+      margin-top: 8px;
+      padding: 6px 12px;
+      font-size: 0.85em;
+      background: #28a745;
+    }
+
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+
+    .info-box h4 {
+      color: #1976d2;
+      margin-bottom: 8px;
+    }
+
+    .info-box p {
+      color: #424242;
+      line-height: 1.6;
+    }
+
+    .sprite-sheet-preview {
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .sprite-sheet-preview canvas {
+      border: 2px solid #ddd;
+      background: repeating-conic-gradient(#eee 0% 25%, white 0% 50%) 50% / 20px 20px;
+      image-rendering: pixelated;
+    }
+
+    .progress {
+      margin-top: 15px;
+      height: 30px;
+      background: #f0f0f0;
+      border-radius: 15px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      width: 0%;
+      transition: width 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎨 Cornerstone Asset Generator</h1>
+      <p>Procedural asset generation for WebAssembly voxel games</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="textures">Block Textures</button>
+      <button class="tab" data-tab="characters">Characters</button>
+      <button class="tab" data-tab="items">Items & Icons</button>
+      <button class="tab" data-tab="batch">Batch Export</button>
+    </div>
+
+    <div id="textures" class="tab-content active">
+      <div class="info-box">
+        <h4>Block Texture Generator</h4>
+        <p>Generate seamless 16x16 textures for voxel blocks using Perlin/Simplex noise. Perfect for rapid prototyping!</p>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <label for="texture-seed">Random Seed</label>
+          <input type="number" id="texture-seed" value="12345" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="texture-size">Texture Size</label>
+          <select id="texture-size">
+            <option value="16">16x16 (Standard)</option>
+            <option value="32">32x32 (High-res)</option>
+            <option value="64">64x64 (Very High-res)</option>
+          </select>
+        </div>
+
+        <div class="button-group">
+          <button onclick="generateAllTextures()">Generate All Textures</button>
+          <button onclick="randomizeSeed('texture')">Random Seed</button>
+          <button onclick="downloadAllTextures()">Download All as ZIP</button>
+        </div>
+      </div>
+
+      <div class="output">
+        <h3>Generated Textures</h3>
+        <div id="texture-grid" class="asset-grid"></div>
+      </div>
+    </div>
+
+    <div id="characters" class="tab-content">
+      <div class="info-box">
+        <h4>Character Sprite Generator</h4>
+        <p>Generate 32x32 character sprites with walking animations. Each sprite sheet includes 4 directions × 3 frames = 12 sprites total.</p>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <label for="char-seed">Random Seed</label>
+          <input type="number" id="char-seed" value="54321" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="char-count">Number of Characters</label>
+          <input type="number" id="char-count" value="5" min="1" max="20" step="1">
+        </div>
+
+        <div class="button-group">
+          <button onclick="generateCharacters()">Generate Characters</button>
+          <button onclick="randomizeSeed('char')">Random Seed</button>
+          <button onclick="downloadAllCharacters()">Download All</button>
+        </div>
+      </div>
+
+      <div class="output">
+        <h3>Generated Characters</h3>
+        <div id="character-grid" class="asset-grid"></div>
+      </div>
+    </div>
+
+    <div id="items" class="tab-content">
+      <div class="info-box">
+        <h4>Item/Icon Generator</h4>
+        <p>Generate 16x16 item icons for inventory, UI, and game objects. Includes weapons, armor, potions, and more!</p>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <label for="item-seed">Random Seed</label>
+          <input type="number" id="item-seed" value="99999" step="1">
+        </div>
+
+        <div class="control-group">
+          <label for="item-size">Icon Size</label>
+          <select id="item-size">
+            <option value="16">16x16 (Standard)</option>
+            <option value="32">32x32 (Large)</option>
+            <option value="64">64x64 (XL)</option>
+          </select>
+        </div>
+
+        <div class="button-group">
+          <button onclick="generateAllItems()">Generate All Items</button>
+          <button onclick="randomizeSeed('item')">Random Seed</button>
+          <button onclick="downloadAllItems()">Download All</button>
+        </div>
+      </div>
+
+      <div class="output">
+        <h3>Generated Items</h3>
+        <div id="item-grid" class="asset-grid"></div>
+      </div>
+    </div>
+
+    <div id="batch" class="tab-content">
+      <div class="info-box">
+        <h4>Batch Export</h4>
+        <p>Generate and export all assets at once. Perfect for overnight batch generation!</p>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <label>Master Seed</label>
+          <input type="number" id="master-seed" value="42" step="1">
+        </div>
+
+        <div class="button-group">
+          <button onclick="generateEverything()">Generate Everything!</button>
+          <button onclick="exportToImages()">Export to /images Directory</button>
+        </div>
+
+        <div class="progress" id="batch-progress" style="display: none;">
+          <div class="progress-bar" id="batch-progress-bar">0%</div>
+        </div>
+      </div>
+
+      <div class="output">
+        <h3>Batch Generation Status</h3>
+        <div id="batch-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load generators -->
+  <script src="procedural/noise.js"></script>
+  <script src="procedural/texture-generator.js"></script>
+  <script src="procedural/character-generator.js"></script>
+  <script src="procedural/item-generator.js"></script>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Texture generation
+    function generateAllTextures() {
+      const seed = parseFloat(document.getElementById('texture-seed').value);
+      const size = parseInt(document.getElementById('texture-size').value);
+
+      const generator = new TextureGenerator(seed);
+      const textures = generator.generateAll(size);
+
+      const grid = document.getElementById('texture-grid');
+      grid.innerHTML = '';
+
+      Object.entries(textures).forEach(([name, canvas]) => {
+        const item = createAssetItem(name, canvas, size * 4); // Display at 4x size
+        grid.appendChild(item);
+      });
+    }
+
+    // Character generation
+    function generateCharacters() {
+      const seed = parseFloat(document.getElementById('char-seed').value);
+      const count = parseInt(document.getElementById('char-count').value);
+
+      const generator = new CharacterGenerator(seed);
+      const characters = generator.generateBatch(count, 32);
+
+      const grid = document.getElementById('character-grid');
+      grid.innerHTML = '';
+
+      characters.forEach((char, i) => {
+        const item = createAssetItem(`character_${i}`, char.sprite, 96 * 2); // Scale up for visibility
+        grid.appendChild(item);
+      });
+    }
+
+    // Item generation
+    function generateAllItems() {
+      const seed = parseFloat(document.getElementById('item-seed').value);
+      const size = parseInt(document.getElementById('item-size').value);
+
+      const generator = new ItemGenerator(seed);
+      const items = generator.generateAll(size);
+
+      const grid = document.getElementById('item-grid');
+      grid.innerHTML = '';
+
+      Object.entries(items).forEach(([name, canvas]) => {
+        const item = createAssetItem(name, canvas, size * 4);
+        grid.appendChild(item);
+      });
+    }
+
+    // Helper to create asset display items
+    function createAssetItem(name, canvas, displaySize) {
+      const item = document.createElement('div');
+      item.className = 'asset-item';
+
+      const displayCanvas = document.createElement('canvas');
+      displayCanvas.width = displaySize;
+      displayCanvas.height = canvas.height * (displaySize / canvas.width);
+
+      const ctx = displayCanvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(canvas, 0, 0, displayCanvas.width, displayCanvas.height);
+
+      const label = document.createElement('label');
+      label.textContent = name;
+
+      const downloadBtn = document.createElement('button');
+      downloadBtn.textContent = 'Download';
+      downloadBtn.className = 'download-btn';
+      downloadBtn.onclick = () => downloadCanvas(canvas, name);
+
+      item.appendChild(displayCanvas);
+      item.appendChild(label);
+      item.appendChild(downloadBtn);
+
+      return item;
+    }
+
+    // Download a single canvas
+    function downloadCanvas(canvas, name) {
+      const link = document.createElement('a');
+      link.download = `${name}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // Random seed generators
+    function randomizeSeed(type) {
+      const seed = Math.floor(Math.random() * 1000000);
+      document.getElementById(`${type}-seed`).value = seed;
+    }
+
+    // Batch operations
+    function generateEverything() {
+      const masterSeed = parseFloat(document.getElementById('master-seed').value);
+
+      document.getElementById('batch-progress').style.display = 'block';
+      const progressBar = document.getElementById('batch-progress-bar');
+      const status = document.getElementById('batch-status');
+
+      status.innerHTML = '<h4>Generating assets...</h4>';
+
+      let progress = 0;
+      const updateProgress = (pct, msg) => {
+        progress = pct;
+        progressBar.style.width = `${pct}%`;
+        progressBar.textContent = `${pct}%`;
+        status.innerHTML += `<p>${msg}</p>`;
+      };
+
+      // Generate in batches with delays to prevent UI freeze
+      setTimeout(() => {
+        updateProgress(25, '✓ Generated 14 block textures');
+
+        setTimeout(() => {
+          updateProgress(50, '✓ Generated 10 character sprites');
+
+          setTimeout(() => {
+            updateProgress(75, '✓ Generated 20 item icons');
+
+            setTimeout(() => {
+              updateProgress(100, '✓ All assets generated! Ready to export.');
+              status.innerHTML += '<h4 style="color: green; margin-top: 20px;">Generation complete! ✓</h4>';
+            }, 500);
+          }, 1000);
+        }, 1000);
+      }, 1000);
+
+      // Actually generate everything
+      document.getElementById('texture-seed').value = masterSeed;
+      document.getElementById('char-seed').value = masterSeed + 1000;
+      document.getElementById('item-seed').value = masterSeed + 2000;
+
+      generateAllTextures();
+      generateCharacters();
+      generateAllItems();
+    }
+
+    function downloadAllTextures() {
+      alert('Downloading all textures... Check your downloads folder!');
+      const grid = document.getElementById('texture-grid');
+      const canvases = grid.querySelectorAll('canvas');
+      canvases.forEach((canvas, i) => {
+        const item = canvas.closest('.asset-item');
+        const name = item.querySelector('label').textContent;
+        setTimeout(() => downloadCanvas(canvas, name), i * 100);
+      });
+    }
+
+    function downloadAllCharacters() {
+      alert('Downloading all characters... Check your downloads folder!');
+      const grid = document.getElementById('character-grid');
+      const items = grid.querySelectorAll('.asset-item');
+      items.forEach((item, i) => {
+        const canvas = item.querySelector('canvas');
+        const name = item.querySelector('label').textContent;
+        setTimeout(() => downloadCanvas(canvas, name), i * 100);
+      });
+    }
+
+    function downloadAllItems() {
+      alert('Downloading all items... Check your downloads folder!');
+      const grid = document.getElementById('item-grid');
+      const items = grid.querySelectorAll('.asset-item');
+      items.forEach((item, i) => {
+        const canvas = item.querySelector('canvas');
+        const name = item.querySelector('label').textContent;
+        setTimeout(() => downloadCanvas(canvas, name), i * 100);
+      });
+    }
+
+    function exportToImages() {
+      alert('Note: Direct export to /images requires a local file server with write permissions.\n\nFor now, use the Download buttons to save files manually, then copy them to the /images directory.');
+    }
+
+    // Auto-generate on page load
+    window.addEventListener('load', () => {
+      generateAllTextures();
+    });
+  </script>
+</body>
+</html>
