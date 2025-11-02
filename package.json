@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "build": "tsc",
+    "start": "http-server -p 8000",
+    "dev": "tsc && http-server -p 8000"
+  },
   "devDependencies": {
     "typescript": "^4.9.4"
   }
