@@ -7,6 +7,15 @@ import {AStar, Check, PathNode, Point as AStarPoint} from './pathing.js';
 import {SpriteMesh, ShadowMesh, Texture} from './renderer.js';
 import {sweep} from './sweep.js';
 import {TextWorld, BibleVerseDisplay} from './text-integration.js';
+import {Lifetime, LifetimeState} from './components/lifetime.js';
+import {Position, PositionState} from './components/position.js';
+import {Lights, LightState, PointLight} from './components/lights.js';
+import {Shadow, ShadowState} from './components/shadow.js';
+import {Meshes, MeshState} from './components/meshes.js';
+import {Inputs, InputState} from './components/inputs.js';
+import {Physics, PhysicsState} from './components/physics.js';
+import {Movement, MovementState} from './components/movement.js';
+import {Pathing, PathingState} from './components/pathing.js';
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -105,6 +114,8 @@ const flowWater = (env: TypedEnv, water: BlockId, points: Point[]) => {
 
 //////////////////////////////////////////////////////////////////////////////
 
+// REFACTORED: Lifetime component moved to components/lifetime.ts
+/*
 // An entity with a lifetime calls cleanup() at the end of its life.
 
 interface LifetimeState {
@@ -123,7 +134,10 @@ const Lifetime: Component<LifetimeState> = {
     }
   },
 };
+*/
 
+// REFACTORED: Position component moved to components/position.ts
+/*
 // An entity with a position is an axis-aligned bounding box (AABB) centered
 // at (x, y, z), with x- and z-extents equal to w and y-extent equal to h.
 
@@ -140,7 +154,10 @@ interface PositionState {
 const Position: Component<PositionState> = {
   init: () => ({id: kNoEntity, index: 0, x: 0, y: 0, z: 0, h: 0, w: 0}),
 };
+*/
 
+// REFACTORED: Physics component moved to components/physics.ts
+/*
 // An entity's physics state tracks its location and velocity, and allows
 // other systems to apply forces and impulses to it. It updates the entity's
 // AABB and keeps its position in sync.
@@ -348,7 +365,10 @@ const Physics = (env: TypedEnv): Component<PhysicsState> => ({
     }
   },
 });
+*/
 
+// REFACTORED: Movement component moved to components/movement.ts
+/*
 // Movement allows an entity to process inputs and attempt to move.
 
 interface MovementState {
@@ -426,6 +446,13 @@ const handleRunning = (dt: number, state: MovementState,
   Vec3.scale(kTmpPush, kTmpPush, Math.min(bound, input) / length);
   Vec3.add(body.forces, body.forces, kTmpPush);
 };
+*/
+
+// Helper functions for particle generation and block modification
+// (used by various components)
+
+// Temporary vector for calculations
+const kTmpPos = Vec3.create();
 
 const generateParticles =
     (env: TypedEnv, block: BlockId, x: int, y: int, z: int, side: int) => {
@@ -538,63 +565,10 @@ const tryToModifyBlock =
   }
 };
 
-const runMovement = (env: TypedEnv, dt: number, state: MovementState) => {
-  const body = env.physics.getX(state.id);
-  const grounded = body.resting[1] < 0;
-  if (grounded) state._jumpCount = 0;
+// (runMovement was part of Movement component - now in components/movement.ts)
 
-  if (state.hovering) {
-    const force = body.vel[1] < 0 ? state.hoverFallForce : state.hoverRiseForce;
-    body.forces[1] += force;
-  }
-
-  if (state.jumping) {
-    handleJumping(dt, state, body, grounded);
-    state.jumping = false;
-  } else {
-    state._jumped = false;
-  }
-
-  if (state.inputX || state.inputZ) {
-    handleRunning(dt, state, body, grounded);
-    body.friction = state.runningFriction;
-    state.inputX = state.inputZ = 0;
-  } else {
-    body.friction = state.standingFriction;
-  }
-};
-
-const Movement = (env: TypedEnv): Component<MovementState> => ({
-  init: () => ({
-    id: kNoEntity,
-    index: 0,
-    inputX: 0,
-    inputZ: 0,
-    jumping: false,
-    hovering: false,
-    maxSpeed: 7.5,
-    moveForce: 30,
-    grassPenalty: 0.5,
-    waterPenalty: 0.5,
-    responsiveness: 15,
-    runningFriction: 0,
-    standingFriction: 2,
-    airMoveMultiplier: 0.5,
-    airJumps: 0,
-    jumpTime: 0.2,
-    jumpForce: 10,
-    jumpImpulse: 7.5,
-    _jumped: false,
-    _jumpCount: 0,
-    _jumpTimeLeft: 0,
-    hoverFallForce: 160,
-    hoverRiseForce: 80,
-  }),
-  onUpdate: (dt: number, states: MovementState[]) => {
-    for (const state of states) runMovement(env, dt, state);
-  }
-});
-
+// REFACTORED: Inputs component moved to components/inputs.ts
+/*
 // An entity with an input component processes inputs.
 
 interface InputState {
@@ -674,7 +648,10 @@ const Inputs = (env: TypedEnv): Component<InputState> => ({
     for (const state of states) runInputs(env, state);
   }
 });
+*/
 
+// REFACTORED: Pathing component moved to components/pathing.ts
+/*
 // An entity with PathingState computes a path to a target and moves along it.
 
 interface PathingState {
@@ -896,7 +873,10 @@ const Pathing = (env: TypedEnv): Component<PathingState> => ({
     for (const state of states) runPathing(env, state);
   }
 });
+*/
 
+// REFACTORED: Meshes component moved to components/meshes.ts
+/*
 // An entity with a MeshState keeps a renderer mesh at its position.
 
 interface MeshState {
@@ -966,7 +946,10 @@ const Meshes = (env: TypedEnv): Component<MeshState> => ({
     }
   },
 });
+*/
 
+// REFACTORED: Shadow component moved to components/shadow.ts
+/*
 // An entity with a ShadowState casts a discrete shadow.
 
 interface ShadowState {
@@ -1006,7 +989,10 @@ const Shadow = (env: TypedEnv): Component<ShadowState> => ({
     }
   },
 });
+*/
 
+// REFACTORED: Lights component moved to components/lights.ts
+/*
 // An entity with a LightState casts light.
 
 interface LightState {
@@ -1072,6 +1058,7 @@ const Lights = (env: TypedEnv): Component<LightState> => ({
     env.point_lights = new_lights;
   },
 });
+*/
 
 // CameraTarget signifies that the camera will follow an entity.
 
@@ -1148,6 +1135,11 @@ const addEntity = (env: TypedEnv, image: string, size: number,
 
 const main = async () => {
   const env = new TypedEnv('container');
+
+  // Attach modifyBlock function to env for use by Inputs component
+  (env as any).modifyBlock = (x: int, y: int, z: int, block: BlockId, side: int) => {
+    modifyBlock(env, x, y, z, block, side);
+  };
 
   const size = 1.5;
   const [x, z] = [1, 1];
