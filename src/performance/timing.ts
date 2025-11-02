@@ -1,4 +1,5 @@
 import {int} from '../base.js';
+import {ITiming} from '../core/interfaces.js';
 import {Performance} from './performance.js';
 
 /**
@@ -16,7 +17,7 @@ const kTicksPerSecond = 60;
 
 type Callback = (dt: number) => void;
 
-export class Timing {
+export class Timing implements ITiming {
   private now: any;
   private remesh: Callback;
   private render: Callback;

@@ -1,4 +1,5 @@
 import {assert, int, nonnull} from '../base.js';
+import {IInputHandler, Input} from '../core/interfaces.js';
 
 /**
  * Container - handles keyboard and mouse input
@@ -11,12 +12,11 @@ import {assert, int, nonnull} from '../base.js';
  * - Stats display
  */
 
-export type Input = 'up' | 'left' | 'down' | 'right' | 'hover' | 'call' |
-                    'mouse0' | 'mouse1' | 'space' | 'pointer';
+export type {Input};
 
 interface KeyBinding {input: Input, handled: boolean};
 
-export class Container {
+export class Container implements IInputHandler {
   element: Element;
   canvas: HTMLCanvasElement;
   stats: Element | null;

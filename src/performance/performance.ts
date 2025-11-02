@@ -1,4 +1,5 @@
 import {assert, int} from '../base.js';
+import {IPerformanceMonitor} from '../core/interfaces.js';
 
 /**
  * Performance - performance monitoring and FPS tracking
@@ -7,7 +8,7 @@ import {assert, int} from '../base.js';
  * Tracks frame timing statistics using a rolling window of samples
  */
 
-export class Performance {
+export class Performance implements IPerformanceMonitor {
   private now: any;
   private index: int;
   private ticks: int[];
