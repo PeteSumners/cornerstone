@@ -6,8 +6,18 @@ import {Instance, LightTexture, Renderer, Texture, VoxelMesh} from './renderer.j
 import {TerrainMesher} from './mesher.js';
 import {kSweepResolution, sweep} from './sweep.js';
 
+// Phase 3: Engine decomposition - extracted modules
+import {Container, Input} from './input/container.js';
+import {Registry, BlockId, MaterialId, MaybeMaterialId, kEmptyBlock, kNoMaterial, kUnknownBlock, kWhite} from './core/registry.js';
+import {WasmHandle} from './wasm/wasm-handle.js';
+import {WasmHelper} from './wasm/wasm-helper.js';
+import {WasmModule} from './wasm/wasm-types.js';
+import {Performance} from './performance/performance.js';
+import {Timing} from './performance/timing.js';
+
 //////////////////////////////////////////////////////////////////////////////
 
+/* Extracted to input/container.ts (Phase 3)
 type Input = 'up' | 'left' | 'down' | 'right' | 'hover' | 'call' |
              'mouse0' | 'mouse1' | 'space' | 'pointer';
 
@@ -126,9 +136,11 @@ class Container {
     e.preventDefault();
   }
 };
+*/
 
 //////////////////////////////////////////////////////////////////////////////
 
+/* Extracted to core/registry.ts (Phase 3)
 type BlockId = int & {__type__: 'BlockId'};
 type MaterialId = int & {__type__: 'MaterialId'};
 type MaybeMaterialId = MaterialId | 0;
@@ -286,9 +298,11 @@ class Registry {
         material.textureIndex, r, g, b, a);
   }
 };
+*/
 
 //////////////////////////////////////////////////////////////////////////////
 
+/* Extracted to performance/performance.ts and performance/timing.ts (Phase 3)
 class Performance {
   private now: any;
   private index: int;
@@ -424,6 +438,7 @@ class Timing {
     console.error(e);
   }
 };
+*/
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -749,6 +764,7 @@ class Env {
 
 //////////////////////////////////////////////////////////////////////////////
 
+/* Extracted to wasm/wasm-types.ts, wasm/wasm-handle.ts, wasm/wasm-helper.ts (Phase 3)
 type WasmCharPtr   = int & {__cpp_type__: 'char*'};
 type WasmNoise2D   = int & {__cpp_type__: 'voxels::Noise2D*'};
 type WasmHeightmap = int & {__cpp_type__: 'voxels::Heightmap*'};
@@ -851,6 +867,7 @@ class WasmHelper {
     this.block_to_instance = [];
   }
 };
+*/
 
 let loaded = false;
 let helper: WasmHelper | null = null;
