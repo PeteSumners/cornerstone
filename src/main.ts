@@ -16,9 +16,14 @@ import {Inputs, InputState} from './components/inputs.js';
 import {Physics, PhysicsState} from './components/physics.js';
 import {Movement, MovementState} from './components/movement.js';
 import {Pathing, PathingState} from './components/pathing.js';
+import {generateParticles} from './systems/particle-system.js';
+import {flowWater} from './systems/water-flow.js';
+import {modifyBlock, tryToModifyBlock} from './systems/block-modification.js';
 
 //////////////////////////////////////////////////////////////////////////////
 
+// REFACTORED: Systems moved to systems/ directory
+/*
 const kNumParticles = 16;
 const kMaxNumParticles = 64;
 
@@ -110,6 +115,58 @@ const flowWater = (env: TypedEnv, water: BlockId, points: Point[]) => {
 
   if (next.length === 0) return;
   setTimeout(() => flowWater(env, water, next), kWaterDelay);
+};
+*/
+
+type Point = [int, int, int];
+type Position = [number, number, number];
+
+interface Blocks {
+  bedrock: BlockId,
+  bush:    BlockId,
+  dirt:    BlockId,
+  fungi:   BlockId,
+  grass:   BlockId,
+  rock:    BlockId,
+  sand:    BlockId,
+  snow:    BlockId,
+  stone:   BlockId,
+  trunk:   BlockId,
+  water:   BlockId,
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+class TypedEnv extends Env {
+  particles: int = 0;
+  blocks: Blocks | null = null;
+  point_lights: Map<string, PointLight>;
+  lifetime: ComponentStore<LifetimeState>;
+  position: ComponentStore<PositionState>;
+  movement: ComponentStore<MovementState>;
+  pathing: ComponentStore<PathingState>;
+  physics: ComponentStore<PhysicsState>;
+  meshes: ComponentStore<MeshState>;
+  shadow: ComponentStore<ShadowState>;
+  inputs: ComponentStore<InputState>;
+  lights: ComponentStore<LightState>;
+  target: ComponentStore;
+
+  constructor(id: string) {
+    super(id);
+    const ents = this.entities;
+    this.point_lights = new Map();
+    this.lifetime = ents.registerComponent('lifetime', Lifetime);
+    this.position = ents.registerComponent('position', Position);
+    this.inputs = ents.registerComponent('inputs', Inputs(this));
+    this.pathing = ents.registerComponent('pathing', Pathing(this));
+    this.movement = ents.registerComponent('movement', Movement(this));
+    this.physics = ents.registerComponent('physics', Physics(this));
+    this.meshes = ents.registerComponent('meshes', Meshes(this));
+    this.shadow = ents.registerComponent('shadow', Shadow(this));
+    this.lights = ents.registerComponent('lights', Lights(this));
+    this.target = ents.registerComponent('camera-target', CameraTarget(this));
+  }
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -448,6 +505,9 @@ const handleRunning = (dt: number, state: MovementState,
 };
 */
 
+// REFACTORED: Particle system moved to systems/particle-system.ts
+// REFACTORED: Block modification moved to systems/block-modification.ts
+/*
 // Helper functions for particle generation and block modification
 // (used by various components)
 
@@ -564,6 +624,7 @@ const tryToModifyBlock =
     }
   }
 };
+*/
 
 // (runMovement was part of Movement component - now in components/movement.ts)
 
