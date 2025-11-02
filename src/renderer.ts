@@ -1,8 +1,13 @@
 import {assert, drop, int, nonnull} from './base.js';
 import {Color, Mat4, Vec3} from './base.js';
+import {Camera, CullingPlane} from './rendering/camera.js';
+import {Geometry} from './rendering/geometry.js';
+import {Sprite, Texture} from './rendering/types.js';
 
 //////////////////////////////////////////////////////////////////////////////
 
+// REFACTORED: Camera class moved to rendering/camera.ts
+/*
 interface CullingPlane {
   x: number;
   y: number;
@@ -149,6 +154,7 @@ class Camera {
     Vec3.set(this.target, x, y, z);
   }
 };
+*/
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -246,6 +252,8 @@ class Shader {
 
 //////////////////////////////////////////////////////////////////////////////
 
+// REFACTORED: Texture interface moved to rendering/types.ts
+/*
 interface Texture {
   alphaTest: boolean,
   color: Color,
@@ -256,6 +264,7 @@ interface Texture {
   w: int,
   h: int,
 };
+*/
 
 class TextureAtlas {
   private gl: WebGL2RenderingContext;
@@ -454,11 +463,14 @@ class TextureAtlas {
 
 //////////////////////////////////////////////////////////////////////////////
 
+// REFACTORED: Sprite interface moved to rendering/types.ts
+/*
 interface Sprite {
   url: string,
   x: int,
   y: int,
 };
+*/
 
 class SpriteAtlas {
   private gl: WebGL2RenderingContext;
@@ -535,6 +547,8 @@ class SpriteAtlas {
 
 //////////////////////////////////////////////////////////////////////////////
 
+// REFACTORED: Geometry class moved to rendering/geometry.ts
+/*
 class Geometry {
   // struct Quad {
   //   // int 0
@@ -659,6 +673,7 @@ class Geometry {
     return new Geometry(new Int32Array(), 0);
   }
 };
+*/
 
 //////////////////////////////////////////////////////////////////////////////
 
